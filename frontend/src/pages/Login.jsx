@@ -2,7 +2,7 @@ import { useState } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 
-const API = import.meta.env.VITE_API_URL || "https://social-media-autoposting.onrender.com";
+const API = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 function Login() {
     const [email, setEmail] = useState("");
@@ -16,6 +16,7 @@ function Login() {
         setLoading(true);
         setError("");
         try {
+            localStorage.removeItem("token");
             const res = await axios.post(`${API}/auth/login`, { email, password });
             localStorage.setItem("token", res.data.access_token);
             navigate("/dashboard");

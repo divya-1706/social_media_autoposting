@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
-const API = import.meta.env.VITE_API_URL || "https://social-media-autoposting.onrender.com";
+const API = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 /* ─── Deep Space AI Background ─────────────────────────────────── */
 function DeepSpaceBackground({ mousePos }) {
@@ -318,6 +318,10 @@ function Dashboard() {
     const [posting, setPosting] = useState(false);
     const [charCount, setCharCount] = useState(0);
     const [postTo, setPostTo] = useState({ linkedin: true, twitter: false });
+    const [scheduleEnabled, setScheduleEnabled] = useState(false);
+    const [scheduleDate, setScheduleDate] = useState("");
+    const [scheduleTime, setScheduleTime] = useState("");
+    const [scheduleAmPm, setScheduleAmPm] = useState("AM");
     const fileInputRef = useRef(null);
 
     /* ─── Parallax Mouse ─────────────────────────────────── */
@@ -349,8 +353,13 @@ function Dashboard() {
         const params = new URLSearchParams(window.location.search);
         if (params.get("linkedin") === "success") { showStatus("✅ LinkedIn connected!", "success"); window.history.replaceState({}, "", "/dashboard"); }
         else if (params.get("linkedin") === "error") { showStatus("❌ LinkedIn: " + (params.get("message") || "Failed"), "error"); window.history.replaceState({}, "", "/dashboard"); }
-        axios.get(`${API}/linkedin/status`, { headers }).then(res => setLinkedinConnected(res.data.connected)).catch(() => { });
-        axios.get(`${API}/twitter/status`, { headers }).then(res => { setTwitterConnected(res.data.connected); if (res.data.screen_name) setTwitterScreenName(res.data.screen_name); }).catch(() => { });
+        axios.get(`${API}/linkedin/status`, { headers })
+            .then(res => setLinkedinConnected(Boolean(res.data?.connected)))
+            .catch(() => setLinkedinConnected(false));
+        axios.get(`${API}/twitter/status`, { headers })
+            .then(res => { setTwitterConnected(Boolean(res.data?.connected)); if (res.data?.screen_name) setTwitterScreenName(res.data.screen_name); })
+            .catch(() => setTwitterConnected(false));
+
     }, [navigate]);
 
     useEffect(() => { setCharCount(generatedText.length); }, [generatedText]);
@@ -433,7 +442,7 @@ function Dashboard() {
         if (targets.length === 0) { showStatus("⚠️ Select at least one connected platform!", "error"); return; }
         setPosting(true); const results = [];
         const token = localStorage.getItem("token");
-        for (const platform of targets) {
+                for (const platform of targets) {
             try {
                 const formData = new FormData();
                 formData.append("text", generatedText);
@@ -443,13 +452,31 @@ function Dashboard() {
                         formData.append("images", file);
                     }
                 }
+                if (scheduleEnabled && scheduleDate && scheduleTime) {
+                    try {
+                        // compose local Date from date + time + AM/PM
+                        let [hh, mm] = scheduleTime.split(":");
+                        hh = parseInt(hh, 10); mm = parseInt(mm, 10);
+                        if (scheduleAmPm === "PM" && hh < 12) hh += 12;
+                        if (scheduleAmPm === "AM" && hh === 12) hh = 0;
+                        const parts = scheduleDate.split("-");
+                        const y = parseInt(parts[0], 10), m = parseInt(parts[1], 10) - 1, d = parseInt(parts[2], 10);
+                        const dt = new Date(y, m, d, hh, mm, 0);
+                        formData.append("scheduled_time", dt.toISOString());
+                    } catch (e) {
+                        console.warn("Invalid scheduled time", e);
+                    }
+                }
                 const res = await axios.post(`${API}/${platform}/post`, formData, { headers: { "Content-Type": "multipart/form-data", "Authorization": `Bearer ${token}` } });
                 results.push(`✅ ${platform}: ${res.data.message}`);
             } catch (err) {
                 results.push(`❌ ${platform}: ${err.response?.data?.detail || err.message}`);
             }
         }
-        showStatus(results.join("  •  "), results.some(r => r.startsWith("❌")) ? "error" : "success");
+                
+                // attach scheduled time if requested
+                // (add once per platform loop before sending)
+                showStatus(results.join("  •  "), results.some(r => r.startsWith("❌")) ? "error" : "success");
         if (!results.some(r => r.startsWith("❌"))) clearAllImages();
         setPosting(false);
     };
@@ -533,12 +560,20 @@ function Dashboard() {
                             <p style={{ fontSize: 13, color: "#64748b", margin: "4px 0 0", fontWeight: 400, letterSpacing: "0.5px" }}>Supercharge your professional presence</p>
                         </div>
                     </div>
-                    <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                        onClick={handleLogout} style={{
-                            padding: "10px 22px", background: "rgba(245, 87, 108, 0.08)", border: "1px solid rgba(245, 87, 108, 0.2)",
-                            borderRadius: 12, color: "#f5576c", fontSize: 13, fontWeight: 700, cursor: "pointer", zIndex: 2,
-                            backdropFilter: "blur(8px)",
-                        }}>Logout</motion.button>
+                    <div style={{ display: "flex", gap: 10, alignItems: "center", zIndex: 2 }}>
+                        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                            onClick={() => navigate("/scheduled")} style={{
+                                padding: "10px 18px", background: "linear-gradient(135deg, #4facfe, #7c3aed)", border: "none",
+                                borderRadius: 12, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer",
+                                backdropFilter: "blur(8px)",
+                            }}>📅 Scheduled</motion.button>
+                        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                            onClick={handleLogout} style={{
+                                padding: "10px 22px", background: "rgba(245, 87, 108, 0.08)", border: "1px solid rgba(245, 87, 108, 0.2)",
+                                borderRadius: 12, color: "#f5576c", fontSize: 13, fontWeight: 700, cursor: "pointer",
+                                backdropFilter: "blur(8px)",
+                            }}>Logout</motion.button>
+                    </div>
                 </motion.div>
 
                 {/* ════ STATUS BAR ════════════════════════════ */}
@@ -849,7 +884,7 @@ function Dashboard() {
                                 <span>Twitter/X</span>
                             </motion.button>
                         </div>
-                        <div style={{ display: "flex", gap: 10 }}>
+                        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                             <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
                                 onClick={copyToClipboard} disabled={!generatedText}
                                 style={{ ...S.btnCopy, opacity: generatedText ? 1 : 0.3 }}>📋 Copy</motion.button>
@@ -861,6 +896,21 @@ function Dashboard() {
                                     ? <span style={S.loadingFlex}><span style={S.spinner} />Posting...</span>
                                     : `📤 Post ${[postTo.linkedin && "LinkedIn", postTo.twitter && "Twitter"].filter(Boolean).join(" & ") || ""}`}
                             </motion.button>
+                            <div style={{ marginLeft: 12, display: "flex", alignItems: "center", gap: 8 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => setScheduleEnabled(s => !s)}
+                                        style={{ padding: '8px 12px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)', background: scheduleEnabled ? 'linear-gradient(135deg,#4facfe,#7c3aed)' : 'rgba(255,255,255,0.03)', color: scheduleEnabled ? '#fff' : '#94a3b8', cursor: 'pointer' }}>
+                                        {scheduleEnabled ? '📅 Scheduling On' : '📅 Schedule (Off)'}
+                                    </motion.button>
+                                    <input type="date" value={scheduleDate} onChange={(e) => setScheduleDate(e.target.value)} style={{ padding: '6px 8px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)', background: scheduleEnabled ? 'rgba(0,0,0,0.35)' : 'rgba(0,0,0,0.12)', color: '#e2e8f0' }} />
+                                    <input type="time" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)} style={{ padding: '6px 8px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)', background: scheduleEnabled ? 'rgba(0,0,0,0.35)' : 'rgba(0,0,0,0.12)', color: '#e2e8f0' }} />
+                                    <select value={scheduleAmPm} onChange={(e) => setScheduleAmPm(e.target.value)} style={{ padding: '6px 8px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)', background: scheduleEnabled ? 'rgba(0,0,0,0.35)' : 'rgba(0,0,0,0.12)', color: '#e2e8f0' }}>
+                                        <option>AM</option>
+                                        <option>PM</option>
+                                    </select>
+                                    <div style={{ fontSize: 12, color: scheduleEnabled ? '#cdeafe' : '#6b7280', marginLeft: 6 }}>{scheduleEnabled ? (scheduleDate && scheduleTime ? `Scheduled: ${scheduleDate} ${scheduleTime} ${scheduleAmPm}` : 'Choose date & time') : 'Scheduling is off'}</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </motion.div>

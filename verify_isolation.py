@@ -5,12 +5,15 @@ import sys
 # Add backend to path to import models if needed, but let's test via API
 API = "http://localhost:8000"
 
+import time
+
 def test_isolation():
     print("Testing connection isolation between users...")
+    ts = int(time.time())
     
     # 1. Create User A
     print("Creating User A...")
-    user_a_data = {"email": "userA@example.com", "password": "password123"}
+    user_a_data = {"email": f"userA_{ts}@example.com", "password": "password123"}
     res_a = requests.post(f"{API}/auth/signup", json=user_a_data)
     if res_a.status_code != 200:
         print(f"Failed to create User A: {res_a.text}")
@@ -24,7 +27,7 @@ def test_isolation():
     
     # 3. Create User B
     print("Creating User B...")
-    user_b_data = {"email": "userB@example.com", "password": "password123"}
+    user_b_data = {"email": f"userB_{ts}@example.com", "password": "password123"}
     res_b = requests.post(f"{API}/auth/signup", json=user_b_data)
     token_b = res_b.json()["access_token"]
     
@@ -33,9 +36,10 @@ def test_isolation():
     res_status_b = requests.get(f"{API}/linkedin/status", headers=headers_b)
     print(f"User B LinkedIn status: {res_status_b.json().get('connected')}")
     
-    # 5. Manually mock a LinkedIn connection in DB (since we can't do OAuth easily here)
-    # We'll skip the actual OAuth and just verify the status check logic via API if we can
+    assert res_status_a.json().get('connected') == False, "User A should not be connected by default"
+    assert res_status_b.json().get('connected') == False, "User B should not be connected by default"
     print("Verification complete (Status checks passed as False for new users).")
+
 
 if __name__ == "__main__":
     test_isolation()
