@@ -10,6 +10,8 @@ class LinkedInUser(Base):
     user_id = Column(Integer, ForeignKey("users.id"), unique=True, index=True)
     linkedin_id = Column(String)
     access_token = Column(String)
+    refresh_token = Column(String, nullable=True)
+    expires_at = Column(String, nullable=True)  # ISO timestamp or epoch
     
     user = relationship("User", back_populates="linkedin_account")
 
@@ -36,3 +38,17 @@ class User(Base):
 
     linkedin_account = relationship("LinkedInUser", back_populates="user", uselist=False)
     twitter_account = relationship("TwitterUser", back_populates="user", uselist=False)
+
+
+class ScheduledPost(Base):
+    __tablename__ = "scheduled_posts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    platform = Column(String)  # 'linkedin' or 'twitter'
+    text = Column(String)
+    images = Column(String)  # JSON-encoded list of base64 strings
+    scheduled_time = Column(String)  # ISO datetime string
+    processed = Column(Integer, default=0)
+
+    user = relationship("User")

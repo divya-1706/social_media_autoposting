@@ -160,6 +160,7 @@ def upload_media(oauth_session, image_bytes: bytes) -> str:
 async def post(
     text: str = Form(...),
     images: Optional[List[UploadFile]] = File(None),
+    scheduled_time: Optional[str] = Form(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -176,6 +177,23 @@ async def post(
 
     # Build tweet payload
     tweet_payload = {"text": text}
+
+    # If scheduled, save scheduled post
+    if scheduled_time:
+        import json
+        from utils.storage import save_media
+        saved_paths = []
+        if images:
+            for img in images:
+                if img and img.filename:
+                    b = await img.read()
+                    path_or_url = save_media(b, img.filename)
+                    saved_paths.append(path_or_url)
+        from models import ScheduledPost
+        sp = ScheduledPost(user_id=current_user.id, platform="twitter", text=text, images=json.dumps(saved_paths), scheduled_time=scheduled_time, processed=0)
+        db.add(sp)
+        db.commit()
+        return {"message": "Scheduled on Twitter", "scheduled_time": scheduled_time}
 
     # Upload images if provided (support multiple)
     if images:
