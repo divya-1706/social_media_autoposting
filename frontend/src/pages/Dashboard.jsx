@@ -547,8 +547,18 @@ function Dashboard() {
                                 border: "1px solid rgba(255,255,255,0.12)",
                                 boxShadow: "0 8px 32px rgba(0,0,0,0.4), 0 0 20px rgba(79,172,254,0.15), inset 0 1px 0 rgba(255,255,255,0.1)",
                             }}>
-                                <img src="https://upload.wikimedia.org/wikipedia/commons/c/ca/LinkedIn_logo_initials.png" alt="Logo"
-                                    style={{ width: 38, height: 38, filter: "drop-shadow(0 0 14px rgba(79,172,254,0.6)) drop-shadow(0 0 30px rgba(79,172,254,0.25))" }} />
+                                <svg width="38" height="38" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <rect width="64" height="64" rx="18" fill="url(#dash-logo-grad)" />
+                                    <path d="M20 44V26C20 22.6863 22.6863 20 26 20H38C41.3137 20 44 22.6863 44 26V44" stroke="white" strokeWidth="4" strokeLinecap="round" />
+                                    <path d="M20 32H44" stroke="white" strokeWidth="4" strokeLinecap="round" />
+                                    <circle cx="44" cy="20" r="6" fill="#00F2FE" />
+                                    <defs>
+                                        <linearGradient id="dash-logo-grad" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+                                            <stop stopColor="#4FACFE" />
+                                            <stop offset="1" stopColor="#00F2FE" />
+                                        </linearGradient>
+                                    </defs>
+                                </svg>
                             </div>
                         </motion.div>
                         <div>

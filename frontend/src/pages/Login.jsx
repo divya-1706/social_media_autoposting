@@ -35,15 +35,22 @@ function Login() {
 
             <div style={styles.glassCard}>
                 <div style={styles.logoContainer}>
-                    <img
-                        src="https://upload.wikimedia.org/wikipedia/commons/c/ca/LinkedIn_logo_initials.png"
-                        alt="LinkedIn Logo"
-                        style={styles.logo}
-                    />
+                    <svg width="56" height="56" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="64" height="64" rx="18" fill="url(#login-logo-grad)" />
+                        <path d="M20 44V26C20 22.6863 22.6863 20 26 20H38C41.3137 20 44 22.6863 44 26V44" stroke="white" strokeWidth="4" strokeLinecap="round" />
+                        <path d="M20 32H44" stroke="white" strokeWidth="4" strokeLinecap="round" />
+                        <circle cx="44" cy="20" r="6" fill="#00F2FE" />
+                        <defs>
+                            <linearGradient id="login-logo-grad" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+                                <stop stopColor="#4FACFE" />
+                                <stop offset="1" stopColor="#00F2FE" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
                 </div>
 
-                <h1 style={styles.title}>Welcome Back</h1>
-                <p style={styles.subtitle}>Supercharge your LinkedIn with AI</p>
+                <h1 style={styles.title}>AI Social Hub</h1>
+                <p style={styles.subtitle}>Sign in to your account</p>
 
                 <form onSubmit={handleLogin} style={styles.form} autoComplete="off">
                     <div style={styles.inputGroup}>
@@ -83,6 +90,10 @@ function Login() {
 
                 <p style={styles.footer}>
                     New here? <Link to="/signup" style={styles.link}>Create a professional account</Link>
+                </p>
+
+                <p style={styles.disclaimer}>
+                    AI Social Hub is an independent platform for content management. Not affiliated with or endorsed by LinkedIn Corporation.
                 </p>
             </div>
         </div>
@@ -228,6 +239,13 @@ const styles = {
         textDecoration: "none",
         fontWeight: "700",
         transition: "color 0.2s ease",
+    },
+    disclaimer: {
+        color: "#475569",
+        fontSize: "11px",
+        marginTop: "24px",
+        textAlign: "center",
+        lineHeight: "1.4",
     },
 };
 
